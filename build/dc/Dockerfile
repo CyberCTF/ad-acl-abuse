@@ -1,7 +1,7 @@
 # Samba, acting as an Active Directory Domain Controller, in a single Linux container.
-# It provisions the realm NORTH.SEVENKINGDOMS.LOCAL at first start (idempotent), plants a
-# low-privilege user (hodor) that holds GenericAll over a higher-value user (maester.luwin),
-# a bystander user (jon.snow) with no such control, and an archive share only maester.luwin
+# It provisions the realm VERTEX.LAB at first start (idempotent), plants a
+# low-privilege user (d.laurent) that holds GenericAll over a higher-value user (b.whitfield),
+# a bystander user (n.castellano) with no such control, and an archive share only b.whitfield
 # may read. The ACL tooling (ldb-tools, ldap-utils, impacket's dacledit) ships in the image so
 # the lab's check can prove the control path from inside the DC.
 FROM debian:12-slim
@@ -10,7 +10,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # Preseed krb5 so its package install never prompts.
 RUN set -eux; \
-    echo "krb5-config krb5-config/default_realm string NORTH.SEVENKINGDOMS.LOCAL" | debconf-set-selections; \
+    echo "krb5-config krb5-config/default_realm string VERTEX.LAB" | debconf-set-selections; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
         samba samba-ad-provision samba-dsdb-modules samba-vfs-modules smbclient ldb-tools \
@@ -24,7 +24,7 @@ RUN set -eux; \
     rm -f /etc/samba/smb.conf
 
 # impacket (pinned) in its own venv: a student enumerates the abusable ACE with its dacledit.py
-# (read the DACL of maester.luwin, spot hodor's GenericAll) and can drive the takeover with
+# (read the DACL of b.whitfield, spot d.laurent's GenericAll) and can drive the takeover with
 # owneredit.py / dacledit.py too. The lab's self-contained check uses Samba-native tooling
 # (samba-tool dsacl, net rpc password), so the check never depends on impacket.
 RUN set -eux; \

